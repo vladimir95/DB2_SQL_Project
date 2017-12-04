@@ -81,7 +81,7 @@ public class YRBApp {
 			          		};
 			          custID = Integer.parseInt(userIntInput);
 		        	  }
-		          //Found the customer
+		          //Found the customer, time to ask for updates
 		          System.out.println("Would you like to update the customer info?"+
 		          "Enter yes/no or y/n:");
 		          userStringInput = scanner.nextLine().toLowerCase();
@@ -92,11 +92,17 @@ public class YRBApp {
 		          }
 		          
 		          while(userStringInput.equals("yes")||userStringInput.equals("y")){
-		        	  
-		        	  
-		        	  
+		        	  update_customer(custID);
+		        	  userStringInput = scanner.nextLine();
+		        	  while(!stringInputCheck(userStringInput)){
+			        	  userStringInput = scanner.nextLine();
+			        	  
+			          }
 		        	  
 		          }
+		          
+		          //Done with updates 
+		          
 		          
 		          
 		          
@@ -212,7 +218,7 @@ public class YRBApp {
         boolean           inDB      = false;  // Return.
 
         queryText =
-            "SELECT name       "
+            "SELECT *       "
           + "FROM yrb_customer "
           + "WHERE cid = ?     ";
 
@@ -278,6 +284,8 @@ public class YRBApp {
     }
 	
 	public void update_customer(int id){
+		
+		boolean updateDB = false;
 		//Handling user's inputs
 		System.out.println("At this time, you can only update your Name or City"+
 				"What would you like to update? Kindly enter: \n" +
@@ -313,11 +321,43 @@ public class YRBApp {
 	        	  
 	          }
         	 
+        	 while(!updateCustomerName(id,userStringInput)){
+        		 System.out.print("Something went wrong. Please enter your name again");
+        	 userStringInput = scanner.nextLine();
+        	 	}
+        	//updateDB = true;
+        	 System.out.print("Would you like to update anything else?");
+        	 return;
         	 
-        	 //if(!updateCustomerName){
-        		 
+        	 
         	 
          }
+         
+         if (userChoice == 2){
+        	 System.out.print("Please enter your new City:");
+        	 userStringInput = scanner.nextLine();
+	          
+	          while(!stringInputCheck(userStringInput)){
+	        	  userStringInput = scanner.nextLine();
+	        	  
+	          }
+        	 
+        	 while(!updateCustomerCity(id,userStringInput)){
+        		 System.out.print("Something went wrong. Please enter your name again");
+        	 userStringInput = scanner.nextLine();
+        	 	}
+        	//updateDB = true;
+        	 System.out.print("Would you like to update anything else?");
+        	 return;
+        	 }
+         if (userChoice == 3){
+        	 System.out.print("Alright, nothing to update." +
+         "Would you like to still update something? Enter yes or y to do so. ");
+        	 return;
+         }
+         
+         System.out.println("Something went wrong. Would you like to try again?");
+         return;
           
          
 	}
@@ -326,9 +366,10 @@ public class YRBApp {
 		//Now finally execute the query 
         String            queryText = "";     // The SQL text.
         PreparedStatement querySt   = null;   // The query handle.
-        //ResultSet         answers   = null;   // A cursor.
+        ResultSet         answers   = null;   // A cursor.
 
-        boolean           updateDB      = false;  // Return.
+        boolean           updateDB = false; 
+        boolean inDB      = false;  // Return.
 
         queryText =
             "UPDATE yrb_customer       "
@@ -347,7 +388,7 @@ public class YRBApp {
         // Execute the query.
         try {
             querySt.setString(1, name);
-            querySt.setInt(2, id);
+            querySt.setInt(2, new Integer(id));
             querySt.executeQuery();
             System.out.print("Update Successful!");
             updateDB = true;
@@ -356,7 +397,28 @@ public class YRBApp {
             System.out.println(e.toString());
             System.exit(0);
         }
-
+        // Any answer?
+        try {
+            if (answers.next()) {
+                inDB = true;
+                System.out.print("Here is what information we have now about you:");
+                custID = answers.getInt("cid");
+                custName = answers.getString("name");
+                custCity = answers.getString("city");
+                System.out.println("Customer ID: " + custID 
+                		+ "       Customer Name: " + custName 
+                		+ "        City: " + custCity);
+                
+            } else {
+                inDB = false;
+                updateDB = false;
+                custName = null;
+            }
+        } catch(SQLException e) {
+            System.out.println("SQL#1 failed in cursor.");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
 
         // We're done with the handle.
         try {
@@ -367,9 +429,82 @@ public class YRBApp {
             System.exit(0);
         }
         
-        return updateDB;
+        return updateDB&&inDB;
 		
 	}
+	
+	private boolean updateCustomerCity(int id, String city){
+		//Now finally execute the query 
+        String            queryText = "";     // The SQL text.
+        PreparedStatement querySt   = null;   // The query handle.
+        ResultSet         answers   = null;   // A cursor.
+
+        boolean           updateDB = false; 
+        boolean inDB      = false;  // Return.
+
+        queryText =
+            "UPDATE yrb_customer       "
+          + "SET custCity = ?"
+          + "WHERE cid = ?     ";
+
+        // Prepare the query.
+        try {
+            querySt = conDB.prepareStatement(queryText);
+        } catch(SQLException e) {
+            System.out.println("SQL#1 failed in prepare");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Execute the query.
+        try {
+            querySt.setString(1, city);
+            querySt.setInt(2, new Integer(id));
+            querySt.executeQuery();
+            System.out.print("Update Successful!");
+            updateDB = true;
+        } catch(SQLException e) {
+            System.out.println("SQL#1 failed in execute");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+        // Any answer?
+        try {
+            if (answers.next()) {
+                inDB = true;
+                System.out.print("Here is what information we have now about you:");
+                custID = answers.getInt("cid");
+                custName = answers.getString("name");
+                custCity = answers.getString("city");
+                System.out.println("Customer ID: " + custID 
+                		+ "       Customer Name: " + custName 
+                		+ "        City: " + custCity);
+                
+            } else {
+                inDB = false;
+                updateDB = false;
+                custName = null;
+            }
+        } catch(SQLException e) {
+            System.out.println("SQL#1 failed in cursor.");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // We're done with the handle.
+        try {
+            querySt.close();
+        } catch(SQLException e) {
+            System.out.print("SQL#1 failed closing the handle.\n");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+        
+        return updateDB&&inDB;
+		
+	}
+	
+	
 	
 	
 	
