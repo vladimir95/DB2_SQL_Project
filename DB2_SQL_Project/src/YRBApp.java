@@ -20,6 +20,12 @@ public class YRBApp {
     private String  custName;   // Name of that customer.
     private String custCity;	//Customer's City
     private int userChoice;		//User's choices in the menus
+    private Map<Integer,String> categories = new TreeMap<Integer,String>(); //categories
+    private Map<Integer,String> bookTitles = new TreeMap<Integer,String>(); //book titles in this category
+    private int categoryChosen;
+    private int titleNumberChosen;
+    private Map<Integer,ArrayList<String>> bookInformation = new TreeMap<Integer,ArrayList<String>>();
+    private int bookNumberChosen;
 	
 	public YRBApp (Scanner in){
 		
@@ -56,13 +62,13 @@ public class YRBApp {
 		          }    
 		  
 		          // Let's have autocommit turned off.  No particular reason here.
-		          try {
+		          /*try {
 		              conDB.setAutoCommit(false);
 		          } catch(SQLException e) {
 		              System.out.print("\nFailed trying to turn autocommit off.\n");
 		              e.printStackTrace();
 		              System.exit(0);
-		          }    
+		          } */   
 		          message();
 		          userIntInput = scanner.nextLine();
 		          while(!intInputCheck(userIntInput)){
@@ -82,11 +88,12 @@ public class YRBApp {
 			          custID = Integer.parseInt(userIntInput);
 		        	  }
 		          //Found the customer, time to ask for updates
-		          System.out.println("Would you like to update the customer info?"+
+		          System.out.println("Before we show you the list of book categories,"+
+		          "would you like to update the customer info?"+
 		          "Enter yes/no or y/n:");
 		          userStringInput = scanner.nextLine().toLowerCase();
 		          
-		          while(!stringInputCheck(userStringInput)){
+		          while(!yesNoInputCheck(userStringInput)){
 		        	  userStringInput = scanner.nextLine();
 		        	  
 		          }
@@ -94,14 +101,116 @@ public class YRBApp {
 		          while(userStringInput.equals("yes")||userStringInput.equals("y")){
 		        	  update_customer(custID);
 		        	  userStringInput = scanner.nextLine();
-		        	  while(!stringInputCheck(userStringInput)){
+		        	  while(!yesNoInputCheck(userStringInput)){
 			        	  userStringInput = scanner.nextLine();
 			        	  
 			          }
 		        	  
 		          }
 		          
-		          //Done with updates 
+		          //Done with updates, let's show the categories
+		          System.out.print("Alright, here are the available book cateogries:");
+		          
+		          while(!fetch_categories()){
+		        	  System.out.println("We are sorry about this."+
+		        			  "This session is now terminated. Please rerun the"+
+		        			  "program and try again");
+		        	  System.exit(0);
+		        	  
+		          };
+		          
+		          System.out.println("Please enter the number that corresponds to"+
+		        		  "the category of your interest");
+		          userIntInput = scanner.nextLine();
+		          while(!intInputCheck(userIntInput)){
+		        	  userIntInput = scanner.nextLine();
+		          };
+		          
+		          categoryChosen = Integer.parseInt(userIntInput);
+		          
+		          //If customer enters wrong input
+		          while(!categories.containsKey(new Integer(categoryChosen))){
+		        	  System.out.println("You have entered an invalid selection"+
+		        			  "Please enter a number corresponding to your"+
+		        			  "category of interest");
+		        	  userIntInput = scanner.nextLine();
+			          while(!intInputCheck(userIntInput)){
+			        	  userIntInput = scanner.nextLine();
+			          };
+			          
+			          categoryChosen = Integer.parseInt(userIntInput);
+			          
+		        	  
+		          }
+		          
+		          //We now display all the books in the category 
+		          //for smooth program flow. The books are also based on customer's
+		          //club
+		          
+		          System.out.println("Here are the books we have in selected Category:");
+		          
+		          //Fetching the book titles
+		          while(!fetch_titles(categoryChosen)){
+		        	  System.out.println("We are sorry about this."+
+		        			  "This session is now terminated. Please rerun the"+
+		        			  "program and try again");
+		        	  System.exit(0);
+		        	  
+		          };
+		          
+		          //Ask customer for the title they are interested in
+		          System.out.println("Please enter the number that corresponds to"+
+		        		  "the title of your interest");
+		          
+		          //****************** IMPLEMENT THIS FEATURE!
+		          System.out.println("If you made a mistake, or you don't"+
+				          "see the title of your interest, press 0 to go back to"
+				          		+ "the list of Categories");
+		          userIntInput = scanner.nextLine();
+		          while(!intInputCheck(userIntInput)){
+		        	  userIntInput = scanner.nextLine();
+		          };
+		          
+		          titleNumberChosen = Integer.parseInt(userIntInput);
+		          
+		          //Show the customer the books with selected title
+		          System.out.println("Here are the books we have of the selected title:");
+		          
+		          while(!find_book(titleNumberChosen,categoryChosen)){
+		        	  System.out.println("We are sorry about this."+
+		        			  "This session is now terminated. Please rerun the"+
+		        			  "program and try again");
+		        	  System.exit(0);
+		        	  
+		          }
+		         
+		          //Take in cusotmer's input
+		          userIntInput = scanner.nextLine();
+		          
+		          while(!intInputCheck(userIntInput)){
+		        	  userIntInput = scanner.nextLine();
+		          }
+		          
+		          bookNumberChosen = Integer.parseInt(userIntInput);
+		          
+		          while (!bookInformation.containsKey(new Integer(bookNumberChosen))){
+		        	  System.out.println("You have entered an invalid selection."+
+		        			  "Please enter a number corresponding to your"+
+		        			  "book of interest");
+		        	  userIntInput = scanner.nextLine();
+			          while(!intInputCheck(userIntInput)){
+			        	  userIntInput = scanner.nextLine();
+			          };
+			          
+			          bookNumberChosen = Integer.parseInt(userIntInput);
+			            
+		          }
+		        	  
+		          
+		          
+		          
+		          
+		          
 		          
 		          
 		          
@@ -161,7 +270,7 @@ public class YRBApp {
 			+ "Let's start with entering your customer ID:");
 	}
 	
-	private boolean stringInputCheck(String s){
+	private boolean yesNoInputCheck(String s){
 		try{
 		String temporary = s.toLowerCase();}
 		catch(NullPointerException e){
@@ -181,6 +290,20 @@ public class YRBApp {
 		"Kindly use yes/no or y/n as the inputs, and try again.");
 			return false;
 		}
+	}
+	
+	private boolean stringInputCheck(String s){
+		boolean correctInput = false;
+		try{
+		String temporary = s.toLowerCase();
+		correctInput = true;
+		}
+		catch(NullPointerException e){
+			System.out.println("We are sorry, but you have reached the End of File."+
+		"The program will end now. Please relaunch it to try again.");
+			System.exit(0);
+		}
+		return correctInput;
 	}
 		
 	private boolean intInputCheck(String a){
@@ -372,9 +495,7 @@ public class YRBApp {
         boolean inDB      = false;  // Return.
 
         queryText =
-            "UPDATE yrb_customer       "
-          + "SET custName = ?"
-          + "WHERE cid = ?     ";
+            "UPDATE yrb_customer SET name = ? WHERE cid = ?";
 
         // Prepare the query.
         try {
@@ -388,7 +509,7 @@ public class YRBApp {
         // Execute the query.
         try {
             querySt.setString(1, name);
-            querySt.setInt(2, new Integer(id));
+            querySt.setInt(2, id);
             querySt.executeQuery();
             System.out.print("Update Successful!");
             updateDB = true;
@@ -398,7 +519,7 @@ public class YRBApp {
             System.exit(0);
         }
         // Any answer?
-        try {
+        /*try {
             if (answers.next()) {
                 inDB = true;
                 System.out.print("Here is what information we have now about you:");
@@ -419,6 +540,15 @@ public class YRBApp {
             System.out.println(e.toString());
             System.exit(0);
         }
+        */
+        
+        //Show the updated info
+        while(!find_customer(id)){
+        	System.out.println("Something went wrong in fetching your updated info."+
+        			"Please try again");
+        	System.exit(0);
+        	
+        }
 
         // We're done with the handle.
         try {
@@ -429,7 +559,7 @@ public class YRBApp {
             System.exit(0);
         }
         
-        return updateDB&&inDB;
+        return updateDB;
 		
 	}
 	
@@ -443,9 +573,7 @@ public class YRBApp {
         boolean inDB      = false;  // Return.
 
         queryText =
-            "UPDATE yrb_customer       "
-          + "SET custCity = ?"
-          + "WHERE cid = ?     ";
+            "UPDATE yrb_customer SET city = ? WHERE cid = ?";
 
         // Prepare the query.
         try {
@@ -459,7 +587,7 @@ public class YRBApp {
         // Execute the query.
         try {
             querySt.setString(1, city);
-            querySt.setInt(2, new Integer(id));
+            querySt.setInt(2, id);
             querySt.executeQuery();
             System.out.print("Update Successful!");
             updateDB = true;
@@ -469,7 +597,7 @@ public class YRBApp {
             System.exit(0);
         }
         // Any answer?
-        try {
+       /* try {
             if (answers.next()) {
                 inDB = true;
                 System.out.print("Here is what information we have now about you:");
@@ -489,6 +617,14 @@ public class YRBApp {
             System.out.println("SQL#1 failed in cursor.");
             System.out.println(e.toString());
             System.exit(0);
+        }*/
+        
+        //Show the updated info
+        while(!find_customer(id)){
+        	System.out.println("Something went wrong in fetching your updated info."+
+        			"Please try again");
+        	System.exit(0);
+        	
         }
 
         // We're done with the handle.
@@ -500,9 +636,302 @@ public class YRBApp {
             System.exit(0);
         }
         
-        return updateDB&&inDB;
+        return updateDB;
 		
 	}
+	
+	
+	public boolean fetch_categories(){
+		String queryText = ""; // The SQL text.
+        PreparedStatement querySt = null; // The query handle.
+        ResultSet answers = null; // A cursor.
+        boolean inDB = false;
+        
+        //ArrayList < String > str = new ArrayList < String > ();
+        queryText = "SELECT *" + 
+        			"FROM yrb_category ";
+
+        // Prepare the query.
+        try {
+            querySt = conDB.prepareStatement(queryText);
+        } catch (SQLException e) {
+            System.out.println("SQL#2 failed in prepare");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Execute the query.
+        try {
+            //querySt.setInt(1, Integer.parseInt(ID));
+            answers = querySt.executeQuery();
+        } catch (SQLException e) {
+            System.out.println("SQL#2 failed in execute");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Any answer?
+        try {
+            for (int i = 1; answers.next(); i++) {
+                String category = answers.getString("cat");
+                categories.put(i, category);
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL#2 failed in cursor.");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Close the cursor.
+        try {
+            answers.close();
+        } catch (SQLException e) {
+            System.out.print("SQL#2 failed closing cursor.\n");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // We're done with the handle.
+        try {
+            querySt.close();
+        } catch (SQLException e) {
+            System.out.print("SQL#2 failed closing the handle.\n");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        //Now let's print the categories
+        try{
+        for (int i = 1; i<categories.size();i++){
+        	System.out.println(i + " - " + categories.get(i));
+        	inDB = true;
+        	
+        } 
+        }catch(NullPointerException e){
+        	System.out.println("Something went wrong with fetching" + 
+        			"the available book cateogries");
+        	
+        }
+        
+        
+        return inDB;
+        }
+	
+	
+	public boolean fetch_titles(int categoryNumber) {
+        String queryText = ""; // The SQL text.
+        PreparedStatement querySt = null; // The query handle.
+        ResultSet answers = null; // A cursor.
+        boolean inDB = false;
+        
+        //ArrayList < String > str = new ArrayList < String > ();
+        queryText = "SELECT DISTINCT title " + 
+        			"FROM yrb_book" +
+        			"WHERE cat = ? and title IN "+
+        					"(SELECT o.title"+
+        					"FROM yrb_offer o " + 
+        					"WHERE o.club in " + 
+        						"(SELECT club " + 
+        						"FROM yrb_member " +
+        						"WHERE cid = ?)) and year IN " + 
+        										"(SELECT o.year " + 
+        										"FROM yrb_offer o " +
+        										"WHERE o.club IN"+
+        												"SELECT club " + 
+        												"FROM yrb_member " + 
+        												"WHERE cid = ?))";
+
+        // Prepare the query.
+        try {
+            querySt = conDB.prepareStatement(queryText);
+        } catch (SQLException e) {
+            System.out.println("SQL#3 failed in prepare");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Execute the query.
+        try {
+        	//temporary variable
+        	String categoryName = categories.get(categoryNumber);
+        	
+        	//Now run the query
+            querySt.setString(1, categoryName);
+            querySt.setInt(2, custID);
+            querySt.setInt(3, custID);
+            answers = querySt.executeQuery();
+        } catch (SQLException e) {
+            System.out.println("SQL#3 failed in execute");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Any answer?
+        try {
+            for (int i = 1; answers.next(); i++) {
+                String bookTitle = answers.getString("title");
+                //str.add(titles);
+                bookTitles.put(i, bookTitle);
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL#3 failed in cursor.");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Close the cursor.
+        try {
+            answers.close();
+        } catch (SQLException e) {
+            System.out.print("SQL#3 failed closing cursor.\n");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // We're done with the handle.
+        try {
+            querySt.close();
+        } catch (SQLException e) {
+            System.out.print("SQL#3 failed closing the handle.\n");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+        
+        //Now let's try printing the book titles
+        try{
+            for (int i = 1; i<bookTitles.size();i++){
+            	System.out.println(i + " - " + bookTitles.get(i));
+            	inDB = true;
+            	
+            } 
+            }catch(NullPointerException e){
+            	System.out.println("Something went wrong with fetching" + 
+            			"the available book titles");
+            	
+            }
+            
+        
+        
+
+        return inDB;
+    }
+	
+	
+	
+	
+	
+	
+	
+	
+    
+	//Based on selected category and book numbers, we now find book information 	
+	public boolean find_book(int titleNumber, int categoryNumber) {
+        String queryText = ""; // The SQL text.
+        PreparedStatement querySt = null; // The query handle.
+        ResultSet answers = null; // A cursor.
+        boolean inDB = false;
+        String titleChosen = bookTitles.get(new Integer(titleNumber));
+        String categoryName = categories.get(new Integer(categoryNumber)); 
+        
+        // ArrayList<String> books=new ArrayList<String>();
+        queryText = "SELECT * " + 
+        			"FROM yrb_book " + 
+        			"WHERE title = ? and cat = ?";
+        
+		
+    
+        // Prepare the query.
+        try {
+            querySt = conDB.prepareStatement(queryText);
+        } catch (SQLException e) {
+            System.out.println("SQL#4 failed in prepare");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Execute the query.
+        try {
+            querySt.setString(1, titleChosen);
+            querySt.setString(2, categoryName);
+            //querySt.setInt(1, Integer.parseInt(ID));
+            answers = querySt.executeQuery();
+        } catch (SQLException e) {
+
+            System.out.println("SQL#4 failed in execute");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+        
+        // Any answer?
+        try {
+        	String title;
+            Integer weight;
+            String language;
+            Integer year;
+            for (int i = 1; answers.next(); i++) {
+            	title = answers.getString("title");
+                year = answers.getInt("year");
+                language = answers.getString("language");
+                weight = answers.getInt("weight");
+                bookInformation.put(i, new ArrayList < String > (Arrays.asList(title, 
+                		Integer.toString(year), language, Integer.toString(weight))));
+                //System.out.println("Title: "+titles+"\tYear: "+years +"\tLanguage: "+languages+
+                //"\tWeight: "+weights);	   
+
+            }
+
+        } catch (SQLException e) {
+            System.out.println("SQL#4 failed in cursor.");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        
+        
+        
+      //Now let's try printing the book information
+        try{
+        	String title;
+            Integer weight;
+            String language;
+            Integer year;
+            System.out.println("Available Books:");
+            for (int i = 1; i<bookTitles.size();i++){
+            	title = bookInformation.get(i).get(0);
+            	year = Integer.parseInt(bookInformation.get(i).get(1));
+                language = bookInformation.get(i).get(2);
+                weight = Integer.parseInt((bookInformation.get(i).get(3)));
+                
+            	System.out.println(i + " - " + title +", " + year +", " +
+            	language + "," + weight + ";");
+            	inDB = true;
+            	
+            } 
+            }catch(NullPointerException e){
+            	System.out.println("Something went wrong with fetching" + 
+            			"the available book titles");
+            	
+            }
+        // Close the cursor.
+        try {
+            answers.close();
+        } catch (SQLException e) {
+            System.out.print("SQL#4 failed closing cursor.\n");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // We're done with the handle.
+        try {
+            querySt.close();
+        } catch (SQLException e) {
+            System.out.print("SQL#4 failed closing the handle.\n");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+        return inDB;
+    }
+	
 	
 	
 	
