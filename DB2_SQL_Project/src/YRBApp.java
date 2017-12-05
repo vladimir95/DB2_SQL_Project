@@ -14,6 +14,7 @@ public class YRBApp {
 	private Scanner scanner; //= new Scanner(System.in);
 	private Connection conDB;   // Connection to the database system.
     private String url;         // URL: Which database?
+    private final int MAXINPUTLENGTH = 15;
     private String userStringInput;
     private String userIntInput;
     private int custID;     // Who are we tallying?
@@ -33,6 +34,8 @@ public class YRBApp {
 		//inputCheck();
 		
 		
+		//End of File thing
+		try {	
 		// Set up the DB connection.
 		          try {
 		             // Register the driver with DriverManager.
@@ -173,6 +176,20 @@ public class YRBApp {
 		          
 		          titleNumberChosen = Integer.parseInt(userIntInput);
 		          
+		          while(!bookTitles.containsKey(new Integer(titleNumberChosen))){
+		        	  System.out.println("You have entered an invalid selection"+
+		        			  "Please enter a number corresponding to your"+
+		        			  "category of interest");
+		        	  userIntInput = scanner.nextLine();
+			          while(!intInputCheck(userIntInput)){
+			        	  userIntInput = scanner.nextLine();
+			          };
+			          
+			          titleNumberChosen = Integer.parseInt(userIntInput);
+			          
+		        	  
+		          }
+		          
 		          //Show the customer the books with selected title
 		          System.out.println("Here are the books we have of the selected title:");
 		          
@@ -184,6 +201,11 @@ public class YRBApp {
 		        	  
 		          }
 		         
+		          
+		        //Ask customer for the title they are interested in
+		          System.out.println("Please enter the number that corresponds to"+
+		        		  "the book of your interest for more information");
+		          
 		          //Take in cusotmer's input
 		          userIntInput = scanner.nextLine();
 		          
@@ -259,7 +281,16 @@ public class YRBApp {
 		             System.out.print("\nFailed trying to close the connection.\n");
 		             e.printStackTrace();
 		             System.exit(0);
-		         }    
+		         }   
+		
+		
+		
+		//Catching end of File 
+		}
+		catch(NoSuchElementException e){
+			System.out.print(" lol We are sorry but you have reached the End of File."+
+					"Please try again.");
+		}
 		 
 		     
 	    
@@ -278,6 +309,9 @@ public class YRBApp {
 		"The program will end now. Please relaunch it to try again.");
 			System.exit(0);
 		}
+		
+		
+		
 		String temporary = s.toLowerCase();
 		String output= "doesnt work";
 		if (temporary.equals("yes")||temporary.equals("no")
@@ -285,10 +319,16 @@ public class YRBApp {
 			output = temporary;
 			return true;
 		}
-		else{
+		else if (temporary.isEmpty()){
 			System.out.println("You have entered an invalid answer."+
 		"Kindly use yes/no or y/n as the inputs, and try again.");
 			return false;
+		}
+		
+		else {
+			System.out.println("You have entered an invalid answer."+
+					"Kindly use yes/no or y/n as the inputs, and try again.");
+						return false;
 		}
 	}
 	
@@ -303,6 +343,29 @@ public class YRBApp {
 		"The program will end now. Please relaunch it to try again.");
 			System.exit(0);
 		}
+		
+		String temporary = s.toLowerCase();
+		if (temporary.isEmpty()){
+			System.out.println("You have entered an empty answer."+
+		"Kindly type your answer, and try again.");
+			correctInput = false;
+		}
+		
+		if (temporary.length()>=MAXINPUTLENGTH){
+			System.out.print("We are sorry, but this input is too long for the database"+
+		"to accept. Please have your input less than 15 characters and try again");
+			correctInput = false;
+		}
+		
+		
+		
+		/*else {
+			System.out.println("You have entered an invalid answer."+
+					"Kindly use yes/no or y/n as the inputs, and try again.");
+						correctInput = false;
+		}*/
+		
+		
 		return correctInput;
 	}
 		
@@ -479,7 +542,8 @@ public class YRBApp {
         	 return;
          }
          
-         System.out.println("Something went wrong. Would you like to try again?");
+         System.out.println("You have entered an invalid selection. Kindly use numbers from"+
+        		 " 1-3. Would you like to try again? Type yes or no");
          return;
           
          
@@ -510,7 +574,7 @@ public class YRBApp {
         try {
             querySt.setString(1, name);
             querySt.setInt(2, id);
-            querySt.executeQuery();
+            querySt.executeUpdate();
             System.out.print("Update Successful!");
             updateDB = true;
         } catch(SQLException e) {
@@ -588,7 +652,7 @@ public class YRBApp {
         try {
             querySt.setString(1, city);
             querySt.setInt(2, id);
-            querySt.executeQuery();
+            querySt.executeUpdate();
             System.out.print("Update Successful!");
             updateDB = true;
         } catch(SQLException e) {
@@ -755,6 +819,7 @@ public class YRBApp {
         	//temporary variable
         	String categoryName = categories.get(categoryNumber);
         	
+        	System.out.println(categoryName);
         	//Now run the query
             querySt.setString(1, categoryName);
             querySt.setInt(2, custID);
