@@ -1,11 +1,18 @@
 //Test Class
-import java.util.*;
-import java.util.*;
-import java.net.*;
-import java.text.*;
-import java.lang.*;
-import java.io.*;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Scanner;
+import java.util.TreeMap;
 
 
 public class YRBApp {
@@ -22,11 +29,17 @@ public class YRBApp {
     private String custCity;	//Customer's City
     private int userChoice;		//User's choices in the menus
     private Map<Integer,String> categories = new TreeMap<Integer,String>(); //categories
-    private Map<Integer,String> bookTitles = new TreeMap<Integer,String>(); //book titles in this category
+    private Map<Integer,ArrayList<String>> bookTitles = new TreeMap<Integer,ArrayList<String>>(); //book titles in this category
     private int categoryChosen;
     private int titleNumberChosen;
     private Map<Integer,ArrayList<String>> bookInformation = new TreeMap<Integer,ArrayList<String>>();
     private int bookNumberChosen;
+    private int bookYear;
+    private String bookTitle;
+    private float minPrice;
+    private int numberOfBooks;
+    private String clubName;
+    private float totalPrice;
 	
 	public YRBApp (Scanner in){
 		
@@ -189,6 +202,8 @@ public class YRBApp {
 			          
 		        	  
 		          }
+		          System.out.println("Title chosen" + titleNumberChosen +
+		        		  			"  category Chosen" + categoryChosen);
 		          
 		          //Show the customer the books with selected title
 		          System.out.println("Here are the books we have of the selected title:");
@@ -227,11 +242,81 @@ public class YRBApp {
 			          bookNumberChosen = Integer.parseInt(userIntInput);
 			            
 		          }
+		        	 
+		          //IMPLEMENT CUSTOMER NOT WANTING THE BOOK HE CHOSE!!!!
+		          
+
+		          
+		          
+		          //Alight, the customer has selected the book of his interest.
+		          //Now, we need to offer the price to the customer based on his club
+		          
+		          System.out.println("We select the minimum price for the book"+
+		        		  " you chose based on your club membership");
+		          
+		
+		          
+		          while(!find_minPrice(custID, bookTitle, bookYear)){
+		        	  System.out.print("Something went wrong with calculating the price"+
+		        			  "Please try agian");
+		        	  System.exit(0);
 		        	  
+		          }
+		          
+		          
+		          while(!(find_club(custID, minPrice))){
+		        	  System.out.print("Something went wrong with fetching your club"+
+		        			  "Please try agian");
+		        	  System.exit(0);
+		        	  
+		          }
+		          
+		          System.out.println("You are getting this price because you are a part of" +
+		        		  		" this club " + clubName);
 		          
 		          
 		          
+		          //Alright, now we ask how many books the customer wants
 		          
+		          System.out.println("How many books were you looking for?");
+		          userIntInput = scanner.nextLine();
+		          
+		          while(!intInputCheck(userIntInput)){
+		        	  userIntInput = scanner.nextLine();
+		          }
+		          
+		          
+		          
+		          numberOfBooks = Integer.parseInt(userIntInput);
+		          
+		          totalPrice = minPrice*numberOfBooks;
+		          
+		          System.out.println("The total price for this many books is" +
+		        		  totalPrice);
+		          
+		          System.out.print("Would you like to buy these books? yes/no?");
+		          
+		          userStringInput = scanner.nextLine();
+		          
+		          while(!yesNoInputCheck(userStringInput)){
+		        	  userStringInput = scanner.nextLine();
+		        	  
+		          }
+		          
+		          if(userStringInput.equals("yes")||userStringInput.equals("y")){
+		        	  while(!(insert_purchase(custID,clubName,bookTitle,bookYear,numberOfBooks))){
+		        		  System.out.println("Something went wrong with inserting your purchase");
+		        		  System.exit(0);
+		        		  
+		        	  }
+		        	  System.out.println("Transaction Complete. Thank you!");
+		        	  
+		          }
+		          
+		          else if (userStringInput.equals("no")||userStringInput.equals("n")){
+		        	  
+		        	System.out.println("That is unfortunate. Thank you for visiting us!");
+		          }
 		          
 		          
 		          
@@ -766,7 +851,7 @@ public class YRBApp {
 
         //Now let's print the categories
         try{
-        for (int i = 1; i<categories.size();i++){
+        for (int i = 1; i<categories.size()+1;i++){
         	System.out.println(i + " - " + categories.get(i));
         	inDB = true;
         	
@@ -789,7 +874,7 @@ public class YRBApp {
         boolean inDB = false;
         
         //ArrayList < String > str = new ArrayList < String > ();
-        queryText = "SELECT DISTINCT title " + 
+        /*queryText = "SELECT DISTINCT title " + 
         			"FROM yrb_book" +
         			"WHERE cat = ? and title IN "+
         					"(SELECT o.title"+
@@ -804,7 +889,12 @@ public class YRBApp {
         												"SELECT club " + 
         												"FROM yrb_member " + 
         												"WHERE cid = ?))";
-
+			*/
+        
+        queryText = "SELECT B.title, B.year, B.language, B.weight"+
+        			" FROM yrb_book B"+
+        			" WHERE B.cat = ?";
+        
         // Prepare the query.
         try {
             querySt = conDB.prepareStatement(queryText);
@@ -822,8 +912,8 @@ public class YRBApp {
         	System.out.println(categoryName);
         	//Now run the query
             querySt.setString(1, categoryName);
-            querySt.setInt(2, custID);
-            querySt.setInt(3, custID);
+            //querySt.setInt(2, custID);
+            ///querySt.setInt(3, custID);
             answers = querySt.executeQuery();
         } catch (SQLException e) {
             System.out.println("SQL#3 failed in execute");
@@ -833,10 +923,20 @@ public class YRBApp {
 
         // Any answer?
         try {
+        	
+        	String title;
+            Integer weight;
+            String language;
+            Integer year;
             for (int i = 1; answers.next(); i++) {
-                String bookTitle = answers.getString("title");
-                //str.add(titles);
-                bookTitles.put(i, bookTitle);
+            	title = answers.getString("title");
+                year = answers.getInt("year");
+                language = answers.getString("language");
+                weight = answers.getInt("weight");
+                bookTitles.put(i, new ArrayList < String > (Arrays.asList(title, 
+                		Integer.toString(year), language, Integer.toString(weight))));
+                //System.out.println("Title: "+titles+"\tYear: "+years +"\tLanguage: "+languages+
+                //"\tWeight: "+weights);	   
             }
         } catch (SQLException e) {
             System.out.println("SQL#3 failed in cursor.");
@@ -864,11 +964,28 @@ public class YRBApp {
         
         //Now let's try printing the book titles
         try{
-            for (int i = 1; i<bookTitles.size();i++){
+            /*for (int i = 1; i<bookTitles.size();i++){
             	System.out.println(i + " - " + bookTitles.get(i));
             	inDB = true;
+            	}*/
+        	String title;
+            Integer weight;
+            String language;
+            Integer year;
+            System.out.println("Available Books:");
+            for (int i = 1; i<bookTitles.size()+1;i++){
+            	title = bookTitles.get(i).get(0);
+            	year = Integer.parseInt(bookTitles.get(i).get(1));
+                language = bookTitles.get(i).get(2);
+                weight = Integer.parseInt((bookTitles.get(i).get(3)));
+                
+            	System.out.println(i + " - " + title +", " + year +", " +
+            	language + "," + weight + ";");
+            	inDB = true;
+            }
+            
             	
-            } 
+             
             }catch(NullPointerException e){
             	System.out.println("Something went wrong with fetching" + 
             			"the available book titles");
@@ -895,9 +1012,11 @@ public class YRBApp {
         PreparedStatement querySt = null; // The query handle.
         ResultSet answers = null; // A cursor.
         boolean inDB = false;
-        String titleChosen = bookTitles.get(new Integer(titleNumber));
+        String titleChosen = bookTitles.get(new Integer(titleNumber)).get(0);
         String categoryName = categories.get(new Integer(categoryNumber)); 
         
+        
+        System.out.print(titleChosen + "   "+  categoryName);
         // ArrayList<String> books=new ArrayList<String>();
         queryText = "SELECT * " + 
         			"FROM yrb_book " + 
@@ -941,7 +1060,8 @@ public class YRBApp {
                 bookInformation.put(i, new ArrayList < String > (Arrays.asList(title, 
                 		Integer.toString(year), language, Integer.toString(weight))));
                 //System.out.println("Title: "+titles+"\tYear: "+years +"\tLanguage: "+languages+
-                //"\tWeight: "+weights);	   
+                //"\tWeight: "+weights);	  
+                inDB = true;
 
             }
 
@@ -960,8 +1080,8 @@ public class YRBApp {
             Integer weight;
             String language;
             Integer year;
-            System.out.println("Available Books:");
-            for (int i = 1; i<bookTitles.size();i++){
+            System.out.println("The book that you chose:");
+            for (int i = 1; i<bookInformation.size()+1;i++){
             	title = bookInformation.get(i).get(0);
             	year = Integer.parseInt(bookInformation.get(i).get(1));
                 language = bookInformation.get(i).get(2);
@@ -970,6 +1090,9 @@ public class YRBApp {
             	System.out.println(i + " - " + title +", " + year +", " +
             	language + "," + weight + ";");
             	inDB = true;
+            	
+            	bookTitle = title;
+            	bookYear = year;
             	
             } 
             }catch(NullPointerException e){
@@ -997,9 +1120,217 @@ public class YRBApp {
         return inDB;
     }
 	
+	private boolean find_minPrice(int customerID, String title, int year){
+		String            queryText = "";     // The SQL text.
+        PreparedStatement querySt   = null;   // The query handle.
+        ResultSet         answers   = null;   // A cursor.
+
+        boolean           inDB      = false;  // Return.
+
+        
+        System.out.println(bookTitle + "  " + bookYear);
+        queryText =
+            "SELECT min(price)       "
+          + "FROM yrb_offer O, yrb_member M "
+          + "WHERE M.cid = ? AND M.club = O.club AND O.title = ? AND O.year = ?";
+
+        // Prepare the query.
+        try {
+            querySt = conDB.prepareStatement(queryText);
+        } catch(SQLException e) {
+            System.out.println("SQL#1 failed in prepare");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Execute the query.
+        try {
+            querySt.setInt(1, customerID);
+            querySt.setString(2, title);
+            querySt.setInt(3, year);
+            answers = querySt.executeQuery();
+        } catch(SQLException e) {
+            System.out.println("SQL#1 failed in execute");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Any answer?
+        try {
+            if (answers.next()) {
+                inDB = true;
+                minPrice = answers.getFloat(1);
+                //custName = answers.getString("name");
+                //custCity = answers.getString("city");
+                System.out.println("Your minimum price is for this book is "
+                		+ minPrice);
+                
+            } else {
+                inDB = false;
+                custName = null;
+            }
+        } catch(SQLException e) {
+            System.out.println("SQL#1 failed in cursor.");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Close the cursor.
+        try {
+            answers.close();
+        } catch(SQLException e) {
+            System.out.print("SQL#1 failed closing cursor.\n");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // We're done with the handle.
+        try {
+            querySt.close();
+        } catch(SQLException e) {
+            System.out.print("SQL#1 failed closing the handle.\n");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+        
+        return inDB;
+      
+		
+		
+		
+		
+		
+		
+		
+		
+	}
 	
-	
-	
+	private boolean find_club(int customerID, float price){
+		String            queryText = "";     // The SQL text.
+        PreparedStatement querySt   = null;   // The query handle.
+        ResultSet         answers   = null;   // A cursor.
+
+        boolean           inDB      = false;  // Return.
+
+        
+        //System.out.println(bookTitle + "  " + bookYear);
+        queryText =
+            "SELECT O.club       "
+          + "FROM yrb_offer O, yrb_member M "
+          + "WHERE M.cid = ? AND M.club = O.club AND O.price = ?";
+
+        // Prepare the query.
+        try {
+            querySt = conDB.prepareStatement(queryText);
+        } catch(SQLException e) {
+            System.out.println("SQL#1 failed in prepare");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Execute the query.
+        try {
+            querySt.setInt(1, customerID);
+            querySt.setFloat(2, price);
+            //querySt.setInt(3, year);
+            answers = querySt.executeQuery();
+        } catch(SQLException e) {
+            System.out.println("SQL#1 failed in execute");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Any answer?
+        try {
+            if (answers.next()) {
+                inDB = true;
+                clubName = answers.getString("club");
+                //custName = answers.getString("name");
+                //custCity = answers.getString("city");
+                System.out.println("Your minimum price is for this book is "
+                		+ minPrice);
+                
+            } else {
+                inDB = false;
+                custName = null;
+            }
+        } catch(SQLException e) {
+            System.out.println("SQL#1 failed in cursor.");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Close the cursor.
+        try {
+            answers.close();
+        } catch(SQLException e) {
+            System.out.print("SQL#1 failed closing cursor.\n");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // We're done with the handle.
+        try {
+            querySt.close();
+        } catch(SQLException e) {
+            System.out.print("SQL#1 failed closing the handle.\n");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+        
+        return inDB;
+      
+		
+	}
+
+	public boolean insert_purchase(int cid, String club, String title, int year, int quantity) {
+        String queryText = ""; // The SQL text.
+        PreparedStatement querySt = null; // The query handle.
+        ResultSet answers = null; // A cursor.
+        boolean inDB = false;
+
+        Timestamp currentTime = new Timestamp(System.currentTimeMillis());
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH.mm.ss");
+        String stamp = dateFormat.format(currentTime);
+
+        queryText = "INSERT INTO yrb_purchase values (?,?,?,?,?,?) ";
+        try {
+            querySt = conDB.prepareStatement(queryText);
+        } catch (SQLException e) {
+            System.out.println("SQL#6 failed in prepare");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // Execute the query.
+        try {
+        	
+            querySt.setInt(1, cid);
+            querySt.setString(2, club);
+            querySt.setString(3, title);
+            querySt.setInt(4, year);
+            querySt.setString(5, stamp);
+            querySt.setInt(6, quantity);
+            querySt.executeUpdate();
+            System.out.println("Purchase inserted!");
+            inDB = true;
+        } catch (SQLException e) {
+            System.out.println("SQL#6 failed in update");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+
+        // We're done with the handle.
+        try {
+            querySt.close();
+        } catch (SQLException e) {
+            System.out.print("SQL#6 failed closing the handle.\n");
+            System.out.println(e.toString());
+            System.exit(0);
+        }
+        return inDB;
+
+}
 	
 	
 	
