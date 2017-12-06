@@ -1,4 +1,8 @@
-//Test Class
+//YRBAPP CLASS
+//Done by Vladimir Martintsov, EECS Login: vlad95
+
+//Available on https://github.com/vladimir95/DB2_SQL_Project
+
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -17,41 +21,51 @@ import java.util.TreeMap;
 
 
 public class YRBApp {
-	//created GIT repository
 
-	private Scanner scanner; //= new Scanner(System.in);
+	private Scanner scanner; //Scanner used to take in user's input
 	private Connection conDB;   // Connection to the database system.
-	private String url;         // URL: Which database?
-	private final int MAXNAMELENGTH = 15;
-	private final int MAXCITYLENGTH = 20;
-	private String userStringInput;
-	private String userIntInput;
-	private int custID;     // Who are we tallying?
+	private String url;         // URL of the database?
+	private final int MAXNAMELENGTH = 20; //Max name length allowed in this database
+	private final int MAXCITYLENGTH = 15; //Max City length allowed in this database
+	private String userStringInput; //Current String input by the user
+	private String userIntInput; //current Integer Input by the user
+	private int custID;     // Customer ID
 	private String  custName;   // Name of that customer.
 	private String custCity;	//Customer's City
-	private int userChoice;		//User's choices in the menus
-	private Map<Integer,String> categories = new TreeMap<Integer,String>(); //categories
-	private Map<Integer,ArrayList<String>> bookTitles = new TreeMap<Integer,ArrayList<String>>(); //book titles in this category
-	private int categoryChosen;
-	private int titleNumberChosen;
-	private Map<Integer,ArrayList<String>> bookInformation = new TreeMap<Integer,ArrayList<String>>();
-	private int bookNumberChosen;
-	private int resetFlag = 0;
-	private int bookYear;
-	private String bookTitle;
-	private float minPrice;
-	private int numberOfBooks;
-	private String clubName;
-	private float totalPrice;
-	private final String abort = "exit"; 
+	private int userChoice;		//User's choices in the Update details menu 
+	
+	private Map<Integer,String> categories = 
+			new TreeMap<Integer,String>(); //categories of the books
+	
+	private Map<Integer,ArrayList<String>> bookTitles = 
+			new TreeMap<Integer,ArrayList<String>>(); //book titles in selected category
+	
+	private int categoryChosen; //Category chosen from the drop down list
+	private int titleNumberChosen; //Book Title chosen form drop down menu list
+	
+	private Map<Integer,ArrayList<String>> bookInformation = 
+			new TreeMap<Integer,ArrayList<String>>(); //Book Information displayed to the customer
+	
+	private int bookNumberChosen; //Book number chosen after title menu
+	private int resetFlag = 0; //Flag needed to reset the transaction
+	private int bookYear; //Year of the book
+	private String bookTitle; //Title of the book
+	private float minPrice; //Minimum Price of the book
+	private int numberOfBooks; //Number of the books customer wants
+	private String clubName; //Customer's Club name
+	private float totalPrice; //Total Price for the selected books
+	
+	//Reserved word to exit throughout any point of the program
+	private final String abort = "EXIT"; 
 
 	public YRBApp (Scanner in){
 
+		//Initialize the scanner
 		scanner = in;
-		//inputCheck();
+		
 
 
-		//End of File thing
+		//End of File input handling
 		try {	
 			// Set up the DB connection.
 			try {
@@ -81,21 +95,18 @@ public class YRBApp {
 				System.exit(0);
 			}    
 
-			// Let's have autocommit turned off.  No particular reason here.
-			/*try {
-		              conDB.setAutoCommit(false);
-		          } catch(SQLException e) {
-		              System.out.print("\nFailed trying to turn autocommit off.\n");
-		              e.printStackTrace();
-		              System.exit(0);
-		          } */   
+			//Welcome message
 			message();
+			
+			//Start taking User's Input
+			//Make sure that only integers are entered
 			userIntInput = scanner.nextLine();
 			while(!intInputCheck(userIntInput)){
 				userIntInput = scanner.nextLine();
 			};
 			custID = Integer.parseInt(userIntInput);
 
+			//Check if the ID is not in database
 			while(!find_customer(custID)){
 				System.out.print("We are sorry, the customer ID you entered" +
 						"is not in our database. Please enter a valid customer ID: ");
@@ -107,7 +118,8 @@ public class YRBApp {
 				};
 				custID = Integer.parseInt(userIntInput);
 			}
-			//Found the customer, time to ask for updates
+			
+			//Found the customer, ask to update the City and Name
 			System.out.println("Before we show you the list of book categories,"+
 					"would you like to update the customer info?"+
 					"Enter yes/no or y/n:");
@@ -119,6 +131,7 @@ public class YRBApp {
 
 			}
 
+			//If customer selects yes, run the Update_cusomter
 			while(userStringInput.equals("yes")||userStringInput.equals("y")){
 				update_customer(custID);
 				userStringInput = scanner.nextLine();
@@ -129,10 +142,15 @@ public class YRBApp {
 
 			}
 
-			while (resetFlag==0){
+			
 			//Done with updates, let's show the categories
+			//THE "CATEGORIES" LOOP
+			while (resetFlag==0){
+			
 			System.out.print("Alright, here are the available book cateogries:");
-
+			
+			//Should there be a problem with fetching categories, abort.
+			//Must be some database issue on user's end
 			while(!fetch_categories()){
 				System.out.println("We are sorry about this."+
 						"This session is now terminated. Please rerun the"+
@@ -140,7 +158,8 @@ public class YRBApp {
 				System.exit(0);
 
 			};
-
+			
+			//Categories fetched fine
 			System.out.println("Please enter the number that corresponds to"+
 					"the category of your interest");
 			userIntInput = scanner.nextLine();
@@ -150,7 +169,7 @@ public class YRBApp {
 
 			categoryChosen = Integer.parseInt(userIntInput);
 
-			//If customer enters wrong input
+			//If customer enters categories not in the list
 			while(!categories.containsKey(new Integer(categoryChosen))){
 				System.out.println("You have entered an invalid selection"+
 						"Please enter a number corresponding to your"+
@@ -165,13 +184,13 @@ public class YRBApp {
 
 			}
 
+			
 			//We now display all the books in the category 
-			//for smooth program flow. The books are also based on customer's
-			//club
+			//for smooth program flow. 
 
 			System.out.println("Here are the books we have in selected Category:");
 
-			//Fetching the book titles
+			//Fetching the book titles. Abort if something is wrong
 			while(!fetch_titles(categoryChosen)){
 				System.out.println("We are sorry about this."+
 						"This session is now terminated. Please rerun the"+
@@ -181,14 +200,17 @@ public class YRBApp {
 			};
 
 			//Ask customer for the title they are interested in
+			//If they feel like they don't see the book allow them
+			//to press 0 to go back to previous menu
+			
 			System.out.println("Please enter the number that corresponds to"+
 					"the title of your interest");
 			System.out.println("If you made a mistake, or you don't"+
 					"see the title of your interest, press 0 to go back to"
 					+ "the list of Categories");
 
-			//****************** IMPLEMENT THIS FEATURE!
 			
+			//Take the input, perform the generic input check
 			userIntInput = scanner.nextLine();
 			while(!intInputCheck(userIntInput)){
 				userIntInput = scanner.nextLine();
@@ -198,7 +220,8 @@ public class YRBApp {
 			
 			
 			
-
+			// If customer enters a title that is not in the list and not 0
+			// then they must be entering some gibberish
 			while((titleNumberChosen!=0)&&!bookTitles.containsKey(new Integer(titleNumberChosen))){
 				System.out.println("You have entered an invalid selection"+
 						"Please enter a number corresponding to your"+
@@ -213,6 +236,8 @@ public class YRBApp {
 
 			}
 			
+			//Should customer enter 0, keep the flag 0
+			//Rerun the "CATEGORIES" loop
 			if(titleNumberChosen==0){
 				resetFlag = 0;
 				continue;
@@ -224,14 +249,11 @@ public class YRBApp {
 			}
 			
 			
-			
-			
-			System.out.println("Title chosen" + titleNumberChosen +
-					"  category Chosen" + categoryChosen);
 
 			//Show the customer the books with selected title
-			System.out.println("Here are the books we have of the selected title:");
+			System.out.println("Here is the book we have of the selected title: ");
 
+			//Perform book fetch from database, and see if anything is wrong
 			while(!find_book(titleNumberChosen,categoryChosen)){
 				System.out.println("We are sorry about this."+
 						"This session is now terminated. Please rerun the"+
@@ -243,7 +265,9 @@ public class YRBApp {
 
 			//Ask customer for the title they are interested in
 			System.out.println("Please enter the number that corresponds to"+
-					"the book of your interest for more information");
+					"the book of your interest for more information. " + 
+					"If you don't like this book, please use the aborting keyword EXIT and" +
+					" and rerun the program");
 			
 			//Take in cusotmer's input
 			userIntInput = scanner.nextLine();
@@ -255,25 +279,7 @@ public class YRBApp {
 			bookNumberChosen = Integer.parseInt(userIntInput);
 			
 			
-			/*while ((bookNumberChosen!=0)&&(!bookInformation.containsKey(new Integer(bookNumberChosen)))){
-				System.out.println("You have entered an invalid selection."+
-						"Please enter a number corresponding to your"+
-						"book of interest");
-				userIntInput = scanner.nextLine();
-				while(!intInputCheck(userIntInput)){
-					userIntInput = scanner.nextLine();
-				};
-
-				bookNumberChosen = Integer.parseInt(userIntInput);
-			
-			}*/
-			
-			
-			
-			
-			
-			
-
+			//Make sure that the customer selects that book
 			while (!bookInformation.containsKey(new Integer(bookNumberChosen))){
 				System.out.println("You have entered an invalid selection."+
 						"Please enter a number corresponding to your"+
@@ -289,20 +295,14 @@ public class YRBApp {
 			
 			}
 			
-
-			//IMPLEMENT CUSTOMER NOT WANTING THE BOOK HE CHOSE!!!!
-
-
-
-
 			//Alight, the customer has selected the book of his interest.
 			//Now, we need to offer the price to the customer based on his club
 
 			System.out.println("We select the minimum price for the book"+
-					" you chose based on your club membership");
+					" you chose based on your club membership.");
 
 
-
+			//Check if fetching the min Price is not running
 			while(!find_minPrice(custID, bookTitle, bookYear)){
 				System.out.print("Something went wrong with calculating the price"+
 						"Please try agian");
@@ -310,14 +310,16 @@ public class YRBApp {
 
 			}
 
-
+			//Check if finding the club did not work
+			//We need the club to calculate the price of the book
 			while(!(find_club(custID, minPrice))){
 				System.out.print("Something went wrong with fetching your club"+
 						"Please try agian");
 				System.exit(0);
 
 			}
-
+			
+			//Justify the price of the book
 			System.out.println("You are getting this price because you are a part of" +
 					" this club " + clubName);
 
@@ -337,7 +339,8 @@ public class YRBApp {
 
 
 			numberOfBooks = Integer.parseInt(userIntInput);
-
+			
+			//Check if the input is valid
 			while(numberOfBooks <=0){
 				System.out.println("You entered an invalid amount."+
 						"Please enter an amount bigger or equal to 1");
@@ -349,21 +352,24 @@ public class YRBApp {
 				numberOfBooks = Integer.parseInt(userIntInput);
 
 			}
-
+			
+			//Calculate the price of the book
 			totalPrice = minPrice*numberOfBooks;
 
 			System.out.println("The total price for this many books is" +
 					totalPrice);
 
 			System.out.print("Would you like to buy these books? yes/no?");
-
+			
+			//Ask if the user wants to buy these books or not
 			userStringInput = scanner.nextLine();
 
 			while(!yesNoInputCheck(userStringInput)){
 				userStringInput = scanner.nextLine();
 
 			}
-
+			
+			//If yes, insert the purchase into the database
 			if(userStringInput.equals("yes")||userStringInput.equals("y")){
 				while(!(insert_purchase(custID,clubName,bookTitle,bookYear,numberOfBooks))){
 					System.out.println("Something went wrong with inserting your purchase");
@@ -373,7 +379,8 @@ public class YRBApp {
 				System.out.println("Transaction Complete. Thank you!");
 
 			}
-
+			
+			//If not, then terminate the program
 			else if (userStringInput.equals("no")||userStringInput.equals("n")){
 
 				System.out.println("That is unfortunate. Thank you for visiting us!");
@@ -381,36 +388,6 @@ public class YRBApp {
 
 
 
-
-
-			// Who are we tallying?
-			/* if (args.length != 1) {
-		              // Don't know what's wanted.  Bail.
-		              System.out.println("\nUsage: java CustTotal cust#");
-		              System.exit(0);
-		          } else {
-		              try {
-		                  custID = new Integer(args[0]);
-		              } catch (NumberFormatException e) {
-		                  System.out.println("\nUsage: java CustTotal cust#");
-		                  System.out.println("Provide an INT for the cust#.");
-		                  System.exit(0);
-		              }
-		          }
-			 */
-			// Is this custID for real?
-			/* if (!customerCheck()) {
-		              System.out.print("There is no customer #");
-		              System.out.print(custID);
-		              System.out.println(" in the database.");
-		              System.out.println("Bye.");
-		              System.exit(0);
-
-		          }
-			 */
-
-			// Report total sales for this customer.
-			//reportSalesForCustomer();
 
 			// Commit.  Okay, here nothing to commit really, but why not...
 			try {
@@ -431,11 +408,11 @@ public class YRBApp {
 
 
 
-			//Catching end of File 
+			//Catching End of File 
 		}
 		catch(NoSuchElementException e){
-			System.out.print(" lol We are sorry but you have reached the End of File."+
-					"Please try again.");
+			System.out.println("We are sorry but you have reached the End of File."+
+					"Please check your inputs and  rerun the program again.");
 		}
 
 
@@ -443,24 +420,33 @@ public class YRBApp {
 	}
 
 	private void message(){ 
-		System.out.print("Intro message. Welcome to the database." 
-				+ "Let's start with entering your customer ID:");
+		System.out.print(" Welcome to the York River Bookseller's Database." +
+		"To use this application appropriately, make sure you have your connection set up "+
+		"and your ID ready. To set up teh connection properly, please refer to user manual \n" +
+		"At any point in this program, feel free to type SPECIFIC keyword EXIT to terminate "+
+		"the program. The keyword IS case SENSITIVE! \n" + 
+		"Please use integers on your keypad as inputs OR " + ""
+		+ "YES/Y or NO/N (yes/y or no/n are also acceptable) in the prompts that ask "+
+		"for your action. \n"
+		+ "Remember: the Name supported by the database is of 20 characters and City - 15 \n"+
+		"Should there be a critical error, the program will terminate automatically. Simply "+
+		"rerun the program to start again. The program cannot and should not run if something " +
+		"goes wrong internally.\n"+
+		"You are all set and good to go! \n" 
+		+ "Let's start with entering your customer ID:");
 	}
 
+	//Helper Method that enforces the user to enter yes/no or y/no
 	private boolean yesNoInputCheck(String s){
 		try{
 			String temporary = s.toLowerCase();}
 		catch(NullPointerException e){
-			System.out.println("We are sorry, but you have reached the End of File."+
+			System.out.println("We are sorry, but you have reached some error"+
 					"The program will end now. Please relaunch it to try again.");
 			System.exit(0);
 		}
 
-
-
 		String temporary = s.toLowerCase();
-		String output= "doesnt work";
-
 		if(temporary.equals(abort)){
 			System.out.println("This operation has been aborted. Thank you, good bye!");
 			System.exit(0);
@@ -468,7 +454,6 @@ public class YRBApp {
 
 		if (temporary.equals("yes")||temporary.equals("no")
 				||temporary.equals("n")||temporary.equals("y")){
-			output = temporary;
 			return true;
 		}
 		else if (temporary.isEmpty()){
@@ -484,6 +469,7 @@ public class YRBApp {
 		}
 	}
 
+	// This method checks if there are no abnormal inputs that are passed as strings
 	private boolean stringInputCheck(String s){
 		boolean correctInput = false;
 		try{
@@ -510,20 +496,10 @@ public class YRBApp {
 		}
 
 
-
-
-
-
-		/*else {
-			System.out.println("You have entered an invalid answer."+
-					"Kindly use yes/no or y/n as the inputs, and try again.");
-						correctInput = false;
-		}*/
-
-
 		return correctInput;
 	}
 
+	//This method ensures that the user is entering integers only as required
 	private boolean intInputCheck(String a){
 
 
@@ -544,26 +520,12 @@ public class YRBApp {
 			System.out.println("We are sorry, but you have entered an invalid integer"+
 					"The program requires integers as inputs. Please try again.");
 			return false; 
-			//System.exit(0);
+			
 		}
-		//int temp = Integer.parseInt(s);
-		/*String output= "doesnt work";
-			if (temporary.equals("yes")||temporary.equals("no")
-					||temporary.equals("n")||temporary.equals("y")){
-				output = temporary;
-				return true;
-			}
-			else{
-				System.out.println("You have entered an invalid answer."+
-			"Kindly use yes/no or y/n as the inputs, and try again");
-		 */
 		return true;
 	}
 
-	//System.out.println("Doesn't work");		
-	//return false;
-
-
+	//This method retrieves customer ID from database
 	public boolean find_customer(int input) {
 		String            queryText = "";     // The SQL text.
 		PreparedStatement querySt   = null;   // The query handle.
@@ -602,6 +564,7 @@ public class YRBApp {
 				custID = answers.getInt("cid");
 				custName = answers.getString("name");
 				custCity = answers.getString("city");
+				//Output the customer information
 				System.out.println("Customer ID: " + custID 
 						+ "       Customer Name: " + custName 
 						+ "        City: " + custCity);
@@ -636,10 +599,10 @@ public class YRBApp {
 
 		return inDB;
 	}
-
+	
+	//This method allows the user to update it's information in Database
 	public void update_customer(int id){
 
-		boolean updateDB = false;
 		//Handling user's inputs
 		System.out.println("At this time, you can only update your Name or City"+
 				"What would you like to update? Kindly enter: \n" +
@@ -653,7 +616,8 @@ public class YRBApp {
 		userChoice = Integer.parseInt(userIntInput);
 
 		System.out.println("We got to this point");
-
+		
+		//Making sure the customer enters integers only
 		while(!(userChoice==1||userChoice==2||userChoice==3)){
 			System.out.println("You have entered an invalid selection."+
 					"What would you like to update? Kindly enter: \n" +
@@ -668,25 +632,26 @@ public class YRBApp {
 
 
 		}
-		System.out.println("We got to this point too");
-		System.out.print("int input is" +userChoice);
 
 		//Now finally execute the query
+		//Updating the name
 		if (userChoice == 1){
-			System.out.print("Please enter your new Name:");
+			System.out.println("Please enter your new Name:");
 			userStringInput = scanner.nextLine();
 
 			while(!stringInputCheck(userStringInput)){
 				userStringInput = scanner.nextLine();
 
 			}
-
+			
+			//Handle too long inputs
 			if (userStringInput.length()>=MAXNAMELENGTH){
 				System.out.print("We are sorry, but this name is too long for this database"+
 						"to accept. Please have your input up to and including 20 characters"+
 						"Would you like to still update anything else?");
 				return;
 			}
+				//Run the helper method
 				while(!updateCustomerName(id,userStringInput)){
 					System.out.print("Something went wrong. Please enter your name again");
 					userStringInput = scanner.nextLine();
@@ -699,7 +664,7 @@ public class YRBApp {
 
 
 		
-
+		//Change the city
 		if (userChoice == 2){
 			System.out.print("Please enter your new City:");
 			userStringInput = scanner.nextLine();
@@ -708,6 +673,8 @@ public class YRBApp {
 				userStringInput = scanner.nextLine();
 
 			}
+			
+			//Handle long input
 			if (userStringInput.length()>=MAXCITYLENGTH){
 				System.out.print("We are sorry, but this city name is too long for this database"+
 						"to accept. Please have your input up to and including 15 characters"+
@@ -723,13 +690,14 @@ public class YRBApp {
 			System.out.print("Would you like to update anything else?");
 			return;
 		}
-		
+		//Allow customer to exit if they change their mind
 		if (userChoice == 3){
 			System.out.print("Alright, nothing to update." +
 					"Would you like to still update something? Enter yes or y to do so. ");
 			return;
 		}
 
+		//In case if they come back and enter wrong input, they need to enter 1-3 only
 		System.out.println("You have entered an invalid selection. Kindly use numbers from"+
 				" 1-3. Would you like to try again? Type yes or no");
 		return;
@@ -737,15 +705,15 @@ public class YRBApp {
 
 
 
-
+//Helper method to update the Name in the database
 private boolean updateCustomerName(int id, String name){
 	//Now finally execute the query 
 	String            queryText = "";     // The SQL text.
 	PreparedStatement querySt   = null;   // The query handle.
 	ResultSet         answers   = null;   // A cursor.
 
-	boolean           updateDB = false; 
-	boolean inDB      = false;  // Return.
+	boolean           updateDB = false; //Return variable
+
 
 	queryText =
 			"UPDATE yrb_customer SET name = ? WHERE cid = ?";
@@ -769,31 +737,8 @@ private boolean updateCustomerName(int id, String name){
 	} catch(SQLException e) {
 		System.out.println("SQL#1 failed in execute");
 		System.out.println(e.toString());
-		//System.exit(0);
+		System.exit(0);
 	}
-	// Any answer?
-	/*try {
-            if (answers.next()) {
-                inDB = true;
-                System.out.print("Here is what information we have now about you:");
-                custID = answers.getInt("cid");
-                custName = answers.getString("name");
-                custCity = answers.getString("city");
-                System.out.println("Customer ID: " + custID 
-                		+ "       Customer Name: " + custName 
-                		+ "        City: " + custCity);
-
-            } else {
-                inDB = false;
-                updateDB = false;
-                custName = null;
-            }
-        } catch(SQLException e) {
-            System.out.println("SQL#1 failed in cursor.");
-            System.out.println(e.toString());
-            System.exit(0);
-        }
-	 */
 
 	//Show the updated info
 	while(!find_customer(id)){
@@ -816,6 +761,7 @@ private boolean updateCustomerName(int id, String name){
 
 }
 
+//Helper method to update the City in the database
 private boolean updateCustomerCity(int id, String city){
 	//Now finally execute the query 
 	String            queryText = "";     // The SQL text.
@@ -845,32 +791,11 @@ private boolean updateCustomerCity(int id, String city){
 		System.out.print("Update Successful!");
 		updateDB = true;
 	} catch(SQLException e) {
-		//System.out.println("SQL#1 failed in execute");
-		//System.out.println(e.toString());
-		//System.exit(0);
+		System.out.println("SQL#1 failed in execute");
+		System.out.println(e.toString());
+		System.exit(0);
 	}
-	// Any answer?
-	/* try {
-            if (answers.next()) {
-                inDB = true;
-                System.out.print("Here is what information we have now about you:");
-                custID = answers.getInt("cid");
-                custName = answers.getString("name");
-                custCity = answers.getString("city");
-                System.out.println("Customer ID: " + custID 
-                		+ "       Customer Name: " + custName 
-                		+ "        City: " + custCity);
-
-            } else {
-                inDB = false;
-                updateDB = false;
-                custName = null;
-            }
-        } catch(SQLException e) {
-            System.out.println("SQL#1 failed in cursor.");
-            System.out.println(e.toString());
-            System.exit(0);
-        }*/
+	
 
 	//Show the updated info
 	while(!find_customer(id)){
@@ -893,14 +818,13 @@ private boolean updateCustomerCity(int id, String city){
 
 }
 
-
+//Method to fetch the available categories form the database
 public boolean fetch_categories(){
 	String queryText = ""; // The SQL text.
 	PreparedStatement querySt = null; // The query handle.
 	ResultSet answers = null; // A cursor.
 	boolean inDB = false;
 
-	//ArrayList < String > str = new ArrayList < String > ();
 	queryText = "SELECT *" + 
 			"FROM yrb_category ";
 
@@ -915,7 +839,7 @@ public boolean fetch_categories(){
 
 	// Execute the query.
 	try {
-		//querySt.setInt(1, Integer.parseInt(ID));
+		
 		answers = querySt.executeQuery();
 	} catch (SQLException e) {
 		System.out.println("SQL#2 failed in execute");
@@ -970,30 +894,13 @@ public boolean fetch_categories(){
 	return inDB;
 }
 
-
+//Method that fetches the book titles associated with this category
 public boolean fetch_titles(int categoryNumber) {
 	String queryText = ""; // The SQL text.
 	PreparedStatement querySt = null; // The query handle.
 	ResultSet answers = null; // A cursor.
 	boolean inDB = false;
 
-	//ArrayList < String > str = new ArrayList < String > ();
-	/*queryText = "SELECT DISTINCT title " + 
-        			"FROM yrb_book" +
-        			"WHERE cat = ? and title IN "+
-        					"(SELECT o.title"+
-        					"FROM yrb_offer o " + 
-        					"WHERE o.club in " + 
-        						"(SELECT club " + 
-        						"FROM yrb_member " +
-        						"WHERE cid = ?)) and year IN " + 
-        										"(SELECT o.year " + 
-        										"FROM yrb_offer o " +
-        										"WHERE o.club IN"+
-        												"SELECT club " + 
-        												"FROM yrb_member " + 
-        												"WHERE cid = ?))";
-	 */
 
 	queryText = "SELECT B.title, B.year, B.language, B.weight"+
 			" FROM yrb_book B"+
@@ -1016,8 +923,6 @@ public boolean fetch_titles(int categoryNumber) {
 		System.out.println(categoryName);
 		//Now run the query
 		querySt.setString(1, categoryName);
-		//querySt.setInt(2, custID);
-		///querySt.setInt(3, custID);
 		answers = querySt.executeQuery();
 	} catch (SQLException e) {
 		System.out.println("SQL#3 failed in execute");
@@ -1039,8 +944,7 @@ public boolean fetch_titles(int categoryNumber) {
 			weight = answers.getInt("weight");
 			bookTitles.put(i, new ArrayList < String > (Arrays.asList(title, 
 					Integer.toString(year), language, Integer.toString(weight))));
-			//System.out.println("Title: "+titles+"\tYear: "+years +"\tLanguage: "+languages+
-			//"\tWeight: "+weights);	   
+				   
 		}
 	} catch (SQLException e) {
 		System.out.println("SQL#3 failed in cursor.");
@@ -1068,10 +972,6 @@ public boolean fetch_titles(int categoryNumber) {
 
 	//Now let's try printing the book titles
 	try{
-		/*for (int i = 1; i<bookTitles.size();i++){
-            	System.out.println(i + " - " + bookTitles.get(i));
-            	inDB = true;
-            	}*/
 		String title;
 		Integer weight;
 		String language;
@@ -1104,12 +1004,6 @@ public boolean fetch_titles(int categoryNumber) {
 
 
 
-
-
-
-
-
-
 //Based on selected category and book numbers, we now find book information 	
 public boolean find_book(int titleNumber, int categoryNumber) {
 	String queryText = ""; // The SQL text.
@@ -1121,7 +1015,6 @@ public boolean find_book(int titleNumber, int categoryNumber) {
 
 
 	System.out.print(titleChosen + "   "+  categoryName);
-	// ArrayList<String> books=new ArrayList<String>();
 	queryText = "SELECT * " + 
 			"FROM yrb_book " + 
 			"WHERE title = ? and cat = ?";
@@ -1141,7 +1034,6 @@ public boolean find_book(int titleNumber, int categoryNumber) {
 	try {
 		querySt.setString(1, titleChosen);
 		querySt.setString(2, categoryName);
-		//querySt.setInt(1, Integer.parseInt(ID));
 		answers = querySt.executeQuery();
 	} catch (SQLException e) {
 
@@ -1163,8 +1055,7 @@ public boolean find_book(int titleNumber, int categoryNumber) {
 			weight = answers.getInt("weight");
 			bookInformation.put(i, new ArrayList < String > (Arrays.asList(title, 
 					Integer.toString(year), language, Integer.toString(weight))));
-			//System.out.println("Title: "+titles+"\tYear: "+years +"\tLanguage: "+languages+
-			//"\tWeight: "+weights);	  
+			  
 			inDB = true;
 
 		}
@@ -1224,6 +1115,8 @@ public boolean find_book(int titleNumber, int categoryNumber) {
 	return inDB;
 }
 
+
+//Method to find the minimum price in for the selected book
 private boolean find_minPrice(int customerID, String title, int year){
 	String            queryText = "";     // The SQL text.
 	PreparedStatement querySt   = null;   // The query handle.
@@ -1264,8 +1157,6 @@ private boolean find_minPrice(int customerID, String title, int year){
 		if (answers.next()) {
 			inDB = true;
 			minPrice = answers.getFloat(1);
-			//custName = answers.getString("name");
-			//custCity = answers.getString("city");
 			System.out.println("Your minimum price is for this book is "
 					+ minPrice);
 
@@ -1301,14 +1192,10 @@ private boolean find_minPrice(int customerID, String title, int year){
 
 
 
-
-
-
-
-
-
 }
 
+
+//Helper method needed to fetch Customer's club
 private boolean find_club(int customerID, float price){
 	String            queryText = "";     // The SQL text.
 	PreparedStatement querySt   = null;   // The query handle.
@@ -1319,7 +1206,6 @@ private boolean find_club(int customerID, float price){
 	boolean           inDB      = false;  // Return.
 
 
-	//System.out.println(bookTitle + "  " + bookYear);
 	queryText =
 			"SELECT O.club       "
 					+ "FROM yrb_offer O, yrb_member M "
@@ -1338,7 +1224,6 @@ private boolean find_club(int customerID, float price){
 	try {
 		querySt.setInt(1, customerID);
 		querySt.setBigDecimal(2, minPrice);
-		//querySt.setInt(3, year);
 		answers = querySt.executeQuery();
 	} catch(SQLException e) {
 		System.out.println("SQL#1 failed in execute");
@@ -1351,8 +1236,7 @@ private boolean find_club(int customerID, float price){
 		if (answers.next()) {
 			inDB = true;
 			clubName = answers.getString("club");
-			//custName = answers.getString("name");
-			//custCity = answers.getString("city");
+			
 			System.out.println("Your minimum price is for this book is "
 					+ minPrice);
 
@@ -1389,6 +1273,8 @@ private boolean find_club(int customerID, float price){
 
 }
 
+
+//Final method needed to insert the purchase into the list of purchases byt the customer 
 public boolean insert_purchase(int cid, String club, String title, int year, int quantity) {
 	String queryText = ""; // The SQL text.
 	PreparedStatement querySt = null; // The query handle.
